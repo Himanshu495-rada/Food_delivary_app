@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "420811456179",
+    "project_id": "bhai-a6d72",
+    "storage_bucket": "bhai-a6d72.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:420811456179:android:e1519ff88205d72e6fbac6",
+        "android_client_info": {
+          "package_name": "com.bhai"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "420811456179-mpref27994up1geb7lkh34ic7ii1p512.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCEtpLKoz9xK9eopPUAcb8MpPtxI6vhWVk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "420811456179-mpref27994up1geb7lkh34ic7ii1p512.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
