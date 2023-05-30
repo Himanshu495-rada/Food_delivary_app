@@ -8,8 +8,11 @@ import {
   ImageBackground,
   PermissionsAndroid,
   Platform,
+  AppRegistry,
+  ToastAndroid,
 } from 'react-native';
 import wallpaper from '../../asset/wallpaper.jpg';
+import messaging from '@react-native-firebase/messaging';
 
 function Home({navigation}) {
   function roomService() {
@@ -38,6 +41,19 @@ function Home({navigation}) {
 
   useEffect(() => {
     permission();
+    // Register background handler
+    messaging().setBackgroundMessageHandler(async remoteMessage => {
+      console.log('Message handled in the background!', remoteMessage);
+    });
+
+    // Register foreground handler
+    const unsubscribe = messaging().onMessage(async remoteMessage => {
+      let notification = remoteMessage.notification.title;
+      ToastAndroid.show(notification, ToastAndroid.SHORT);
+    });
+    AppRegistry.registerComponent('app', () => Home);
+
+    return unsubscribe;
   }, []);
 
   return (

@@ -46,14 +46,14 @@ function Hotel({route, navigation}) {
 
   async function getMenu() {
     const response = await fetch(
-      'http://deshmukh.pythonanywhere.com/menu/' + hotel[0],
+      'https://deshmukh.pythonanywhere.com/menu/' + hotel[0],
     );
 
     const data = await response.json();
     console.log(data);
     setMenu(data);
     console.log(
-      'http://deshmukh.pythonanywhere.com/food-images/' + menu[11][4],
+      'https://deshmukh.pythonanywhere.com/food-images/' + menu[11][4],
     );
   }
 
@@ -82,22 +82,34 @@ function Hotel({route, navigation}) {
             <Icon name="arrow-left" size={30} color="black" />
           </TouchableOpacity>
           <TouchableOpacity style={styles.cart} onPress={openCart}>
-            <Text>Cart: {cart.length}</Text>
+            <Text style={{color: 'black'}}>Cart: {cart.length}</Text>
           </TouchableOpacity>
         </View>
 
         <View style={styles.hotelCard}>
-          <Text style={{fontSize: 30, fontWeight: 'bold', marginTop: 10}}>
+          <Text
+            style={{
+              fontSize: 30,
+              fontWeight: 'bold',
+              marginTop: 10,
+              color: 'black',
+            }}>
             {hotel[1]}
           </Text>
-          <Text style={{fontSize: 15, marginTop: 10}}>{hotel[2]}</Text>
-          <Text style={{fontSize: 15, marginTop: 10}}>
+          <Text style={{fontSize: 15, marginTop: 10, color: 'black'}}>
+            {hotel[2]}
+          </Text>
+          <Text style={{fontSize: 15, marginTop: 10, color: 'black'}}>
             {hotel[4]} <Icon name="star" size={15} color="orange" />
             {'   '}
             {hotel[5]} reviews
           </Text>
         </View>
-        <TextInput placeholder="Search for dishes" style={styles.search} />
+        <TextInput
+          placeholder="Search for dishes"
+          style={styles.search}
+          placeholderTextColor="black"
+        />
         <Text
           style={{
             fontSize: 20,
@@ -112,17 +124,20 @@ function Hotel({route, navigation}) {
             <View key={index}>
               <View style={styles.itemCard} key={index}>
                 <View>
-                  <Text style={{fontSize: 20, fontWeight: 'bold'}}>
+                  <Text
+                    style={{fontSize: 20, fontWeight: 'bold', color: 'black'}}>
                     {capitalizeFirstLetter(item[2])}
                   </Text>
-                  <Text style={{fontSize: 15}}>Price: {item[3]} ₹</Text>
+                  <Text style={{fontSize: 15, color: 'black'}}>
+                    Price: {item[3]} ₹
+                  </Text>
                 </View>
 
                 <View style={{marginLeft: 'auto', alignItems: 'center'}}>
                   <Image
                     source={{
                       uri:
-                        'http://deshmukh.pythonanywhere.com/food-images/' +
+                        'https://deshmukh.pythonanywhere.com/food-images/' +
                         item[4],
                     }}
                     style={{

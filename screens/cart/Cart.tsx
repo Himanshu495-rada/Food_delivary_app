@@ -11,7 +11,7 @@ import {
 import {StackActions} from '@react-navigation/native';
 
 function Cart({route, navigation}) {
-  const orders = route.params;
+  const [orders, setOrders] = useState(route.params);
   const [total, setTotal] = useState(0);
 
   function capitalizeFirstLetter(str: string): string {
@@ -22,7 +22,7 @@ function Cart({route, navigation}) {
     try {
       console.log('Sending order:', order);
       const response = await fetch(
-        'http://deshmukh.pythonanywhere.com/addOrders',
+        'https://deshmukh.pythonanywhere.com/addOrders',
         {
           method: 'POST',
           headers: {
@@ -45,18 +45,26 @@ function Cart({route, navigation}) {
   }
 
   async function addOrders() {
-    // for (const order of orders) {
-    //   const o = {
-    //     hotel_id: order[1],
-    //     user_name: 'user@gmail.com',
-    //     food_name: order[2],
-    //     quantity: 1,
-    //     status: 'pending',
-    //   };
-    //   await sendOrderToServer(o);
-    // }
+    for (const order of orders) {
+      const o = {
+        hotel_id: order[1],
+        user_name: 'user@gmail.com',
+        food_name: order[2],
+        quantity: 1,
+        status: 'pending',
+      };
+      await sendOrderToServer(o);
+    }
     ToastAndroid.show('Order Placed Successfully', ToastAndroid.SHORT);
     navigation.dispatch(StackActions.replace('User'));
+  }
+
+  function removeFromCart(item: any) {
+    const index = orders.indexOf(item);
+    if (index > -1) {
+      orders.splice(index, 1);
+    }
+    setOrders([...orders]);
   }
 
   useEffect(() => {
@@ -73,23 +81,33 @@ function Cart({route, navigation}) {
       <View style={styles.cartContainer}>
         {orders.map((order, index) => (
           <View key={index} style={styles.order}>
-            <Image
-              source={{
-                uri:
-                  'http://deshmukh.pythonanywhere.com/food-images/' + order[4],
-              }}
-              style={{
-                width: 100,
-                height: 100,
-                borderRadius: 10,
-              }}
-            />
+            <View style={{alignItems: 'center'}}>
+              <Image
+                source={{
+                  uri:
+                    'https://deshmukh.pythonanywhere.com/food-images/' +
+                    order[4],
+                }}
+                style={{
+                  width: 100,
+                  height: 100,
+                  borderRadius: 10,
+                }}
+              />
+              <TouchableOpacity
+                style={styles.removeBtn}
+                onPress={() => removeFromCart(order)}>
+                <Text style={styles.removeBtnText}>Remove</Text>
+              </TouchableOpacity>
+            </View>
             <Text style={styles.orderText}>
               {capitalizeFirstLetter(order[2])}
             </Text>
             <View>
-              <Text style={{marginLeft: 20}}>Price: {order[3]} ₹</Text>
-              <Text style={{marginLeft: 20}}>Quantity: 1</Text>
+              <Text style={{marginLeft: 15, color: 'black'}}>
+                Price: {order[3]} ₹
+              </Text>
+              <Text style={{marginLeft: 15, color: 'black'}}>Quantity: 1</Text>
             </View>
           </View>
         ))}
@@ -107,7 +125,7 @@ const styles = StyleSheet.create({
   cartContainer: {
     borderWidth: 1,
     borderColor: 'black',
-    width: '90%',
+    width: '95%',
     alignSelf: 'center',
     borderRadius: 10,
     padding: 10,
@@ -116,8 +134,8 @@ const styles = StyleSheet.create({
   order: {
     flexDirection: 'row',
     alignItems: 'center',
-    margin: 10,
-    padding: 10,
+    margin: 2,
+    padding: 2,
   },
   orderText: {
     fontSize: 15,
@@ -142,6 +160,18 @@ const styles = StyleSheet.create({
     fontSize: 20,
     color: 'black',
     fontWeight: 'bold',
+  },
+  removeBtn: {
+    width: 80,
+    height: 25,
+    backgroundColor: 'white',
+    elevation: 5,
+    borderRadius: 5,
+    marginTop: -10,
+  },
+  removeBtnText: {
+    textAlign: 'center',
+    color: 'red',
   },
 });
 

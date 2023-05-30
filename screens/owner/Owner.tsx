@@ -6,44 +6,56 @@ import {
   StyleSheet,
   Image,
   TouchableOpacity,
+  Modal,
+  Button,
+  RefreshControl,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import avatar from '../../asset/avatar-2.jpg';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import messaging from '@react-native-firebase/messaging';
+import {StackActions} from '@react-navigation/native';
 
-function Owner() {
+function Owner({navigation}) {
+  const [refreshing, setRefreshing] = useState(false);
   const [hotel, setHotel] = useState([0, '', '', '', '']);
   const [orders, setOrders] = useState([]);
   const [pendingOrders, setPendingOrders] = useState([]);
   const [completedOrders, setCompletedOrders] = useState([]);
   const [cancelledOrders, setCancelledOrders] = useState([]);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [orderId, setOrderId] = useState(0);
+
+  const handleShowModal = (orderId: number) => {
+    setOrderId(orderId);
+    setModalVisible(true);
+  };
+
   function truncateText(text: string, limit: number) {
     return text.length > limit ? text.substring(0, limit) + '...' : text;
   }
 
   async function getHotel() {
-    const response = await fetch('http://deshmukh.pythonanywhere.com/hotel/1')
+    await fetch('https://deshmukh.pythonanywhere.com/hotel/1')
       .then(response => response.json())
       .then(data => {
         setHotel(data);
+        getOrders();
       });
   }
 
   async function getOrders() {
-    const response = await fetch(
-      'http://deshmukh.pythonanywhere.com/orders?username=user@gmail.com&hotel_id=1',
+    await fetch(
+      'https://deshmukh.pythonanywhere.com/orders?username=user@gmail.com&hotel_id=1',
     )
       .then(response => response.json())
       .then(data => {
         setOrders(data);
-        console.log(data);
+        setPendingOrders(data.filter((order: any) => order[5] === 'pending'));
+        setCompletedOrders(
+          data.filter((order: any) => order[5] === 'completed'),
+        );
       });
-
-    setPendingOrders(orders.filter((order: any) => order[5] === 'pending'));
-    setCompletedOrders(orders.filter((order: any) => order[5] === 'completed'));
-    // filter orders with same createdAt
-    
   }
 
   function capitalizeFirstLetter(str: string): string {
@@ -55,7 +67,7 @@ function Owner() {
     const token = await AsyncStorage.getItem('token');
     console.log(token);
     const response = await fetch(
-      'http://deshmukh.pythonanywhere.com/update_token',
+      'https://deshmukh.pythonanywhere.com/update_token',
       {
         method: 'POST',
         headers: {
@@ -68,6 +80,7 @@ function Owner() {
       },
     );
     if (response.status === 200) {
+      console.log(response);
       console.log('Token updated');
     } else {
       console.log('Token not updated');
@@ -93,14 +106,32 @@ function Owner() {
     }
   }
 
+  async function handleConfirmButtonPress(id: number) {
+    const response = await fetch(
+      'https://deshmukh.pythonanywhere.com/confirm_order/' + String(id),
+    );
+    console.log(response);
+    if (response.status === 200) {
+      setModalVisible(false);
+      getOrders();
+    }
+  }
+
+  async function logout() {
+    await AsyncStorage.removeItem('credentials');
+    navigation.dispatch(StackActions.replace('Login'));
+  }
   useEffect(() => {
-    getHotel();
-    getOrders();
     updateToken();
+    getOrders();
+    getHotel();
   }, []);
 
   return (
-    <ScrollView>
+    <ScrollView
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={getOrders} />
+      }>
       <View style={styles.profileCard}>
         <Image
           source={avatar}
@@ -117,10 +148,12 @@ function Owner() {
           </Text>
           <View style={{flexDirection: 'row', alignItems: 'center'}}>
             <Icon name="map-pin" size={20} color="red" style={{marginTop: 5}} />
-            <Text style={{marginLeft: 10}}>{truncateText(hotel[2], 15)}</Text>
+            <Text style={{marginLeft: 10, color: 'black'}}>
+              {truncateText(String(hotel[2]), 15)}
+            </Text>
           </View>
         </View>
-        <TouchableOpacity style={styles.logoutBtn}>
+        <TouchableOpacity style={styles.logoutBtn} onPress={logout}>
           <Text style={{color: 'white'}}>Logout</Text>
         </TouchableOpacity>
       </View>
@@ -128,21 +161,24 @@ function Owner() {
         <Text style={styles.heading}>Recent Orders</Text>
         <ScrollView horizontal={true}>
           {pendingOrders.map((order: any, index: number) => (
-            <View style={styles.orderCard} key={index}>
+            <TouchableOpacity
+              style={styles.orderCard}
+              key={index}
+              onPress={() => handleShowModal(order[0])}>
               <View style={{flexDirection: 'column'}}>
                 <Text style={styles.orderCardTitle}>{order[6]}</Text>
                 <Text style={{fontSize: 15, color: 'black'}}>
                   {capitalizeFirstLetter(order[3])} Quantity: {order[4]}
                 </Text>
               </View>
-            </View>
+            </TouchableOpacity>
           ))}
         </ScrollView>
       </View>
       <View>
         <Text style={styles.heading}>Completed Orders</Text>
         {completedOrders.length === 0 && cancelledOrders.length === 0 && (
-          <Text style={{textAlign: 'center', marginTop: 20}}>
+          <Text style={{textAlign: 'center', marginTop: 20, color: 'black'}}>
             No orders yet
           </Text>
         )}
@@ -150,7 +186,7 @@ function Owner() {
         {completedOrders.map((order: any, index: number) => (
           <View style={styles.completedOrderCard} key={index}>
             <View style={{flexDirection: 'row'}}>
-              <Text>Order ID: - 1</Text>
+              <Text style={{color: 'black'}}>Order ID: - {order[0]}</Text>
               <View
                 style={{
                   flex: 1,
@@ -169,7 +205,7 @@ function Owner() {
           </View>
         ))}
 
-        {cancelledOrders.map((order: any, index: number) => (
+        {/* {cancelledOrders.map((order: any, index: number) => (
           <View style={styles.cancelOrderCard}>
             <View style={{flexDirection: 'row'}}>
               <Text>Order ID: - 2</Text>
@@ -189,8 +225,30 @@ function Owner() {
               </View>
             </View>
           </View>
-        ))}
+        ))} */}
       </View>
+
+      <Modal visible={modalVisible} animationType="fade" transparent={true}>
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <Icon
+              name="close"
+              size={20}
+              onPress={() => setModalVisible(false)}
+              marginLeft={'auto'}
+              color="black"
+            />
+            <Text style={styles.modalText}>
+              Do you want to confirm the order ?
+            </Text>
+            <Text style={styles.modalText}>Order id = {orderId}</Text>
+            <Button
+              title="Confirm"
+              onPress={() => handleConfirmButtonPress(orderId)}
+            />
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 }
@@ -215,7 +273,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   orderCardTitle: {
-    fontSize: 20,
+    fontSize: 15,
     fontWeight: 'bold',
     color: 'black',
   },
@@ -255,6 +313,27 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 10,
+  },
+  container: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalContent: {
+    backgroundColor: 'white',
+    padding: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  modalText: {
+    marginBottom: 10,
+    color: 'black',
   },
 });
 

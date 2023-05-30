@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {
   StyleSheet,
   Text,
@@ -30,7 +30,7 @@ function Login({navigation}) {
   async function login() {
     console.log('login');
 
-    const response = await fetch('http://deshmukh.pythonanywhere.com/login', {
+    const response = await fetch('https://deshmukh.pythonanywhere.com/login', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -41,27 +41,21 @@ function Login({navigation}) {
     const data = await response.json();
 
     if (response.ok) {
+      await AsyncStorage.setItem(
+        'credentials',
+        JSON.stringify({e: email, p: password}),
+      );
       if (data.user_login) {
         ToastAndroid.show('Login successful', ToastAndroid.SHORT);
-        AsyncStorage.setItem('loginData', JSON.stringify({email, password}));
         navigation.navigate('User');
       } else if (data.owner_login) {
         ToastAndroid.show('Login successful', ToastAndroid.SHORT);
+        updateToken();
         navigation.navigate('Owner');
       } else {
         setInvalidLogin(true);
       }
     }
-
-    // auth()
-    //   .signInWithEmailAndPassword(email, password)
-    //   .then(() => {
-    //     ToastAndroid.show('Login successfull', ToastAndroid.SHORT);
-    //     navigation.navigate('User');
-    //   })
-    //   .catch(error => {
-    //     setInvalidLogin(true);
-    //   });
   }
 
   async function signup() {
@@ -69,28 +63,88 @@ function Login({navigation}) {
       Alert.alert('Password not match');
       return;
     }
-    auth()
-      .createUserWithEmailAndPassword(email, password)
-      .then(userCredential => {
-        ToastAndroid.show('Register Success', ToastAndroid.SHORT);
-      })
-      .catch(error => {
-        if (error.code === 'auth/email-already-in-use') {
-          ToastAndroid.show(
-            'That email address is already in use!',
-            ToastAndroid.SHORT,
-          );
-        } else if (error.code === 'auth/invalid-email') {
-          ToastAndroid.show(
-            'That email address is invalid!',
-            ToastAndroid.SHORT,
-          );
-        } else {
-          ToastAndroid.show('Register Failed', ToastAndroid.SHORT);
-        }
-      });
+    try {
+      const userData = {
+        email: email,
+        password: password,
+        device_token: 'no_device_token',
+      };
+      const response = await fetch(
+        'https://deshmukh.pythonanywhere.com/signup',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(userData),
+        },
+      );
+
+      if (response.ok) {
+        ToastAndroid.show('User created successfully', ToastAndroid.SHORT);
+      } else {
+        ToastAndroid.show('Failed to create user', ToastAndroid.SHORT);
+      }
+    } catch (error) {}
     setSignupPress(false);
   }
+
+  async function getCredentials() {
+    const credentials = await AsyncStorage.getItem('credentials');
+    if (credentials) {
+      const {e, p} = JSON.parse(credentials);
+      setEmail(e);
+      setPassword(p);
+    }
+  }
+
+  async function updateToken() {
+    getToken();
+    const token = await AsyncStorage.getItem('token');
+    console.log(token);
+    const response = await fetch(
+      'https://deshmukh.pythonanywhere.com/update_token',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: 'owner1@gmail.com',
+          device_token: token,
+        }),
+      },
+    );
+    if (response.status === 200) {
+      console.log(response);
+      console.log('Token updated');
+    } else {
+      console.log('Token not updated');
+      console.log(response);
+    }
+  }
+
+  async function getToken() {
+    console.log('Checking token');
+    let token = await AsyncStorage.getItem('token');
+    if (token) {
+      return token;
+    } else {
+      try {
+        let token = await messaging().getToken();
+        console.log(token);
+        AsyncStorage.setItem('token', token);
+        return token;
+      } catch (error) {
+        console.log(error);
+        return 0;
+      }
+    }
+  }
+
+  useEffect(() => {
+    getCredentials();
+  }, []);
 
   return (
     <View style={styles.container}>
@@ -155,8 +209,8 @@ function Login({navigation}) {
                 <Text style={{color: 'white'}}>LOGIN</Text>
               </TouchableOpacity>
 
-              <View style={{color: 'black'}}>
-                <Text>Don't have an account?</Text>
+              <View>
+                <Text style={{color: 'black'}}>Don't have an account?</Text>
               </View>
 
               <TouchableOpacity

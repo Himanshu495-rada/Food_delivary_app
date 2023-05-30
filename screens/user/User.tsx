@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   ScrollView,
   ToastAndroid,
+  RefreshControl,
 } from 'react-native';
 import Geolocation from 'react-native-geolocation-service';
 import firestore from '@react-native-firebase/firestore';
@@ -21,6 +22,7 @@ function User({navigation}) {
   const [lat, setLat] = useState(0);
   const [long, setLong] = useState(0);
   const [restaurants, setRestaurants] = useState([]);
+  const [refreshing, setRefreshing] = useState(false);
 
   const calculateDistance = (
     lat1: number,
@@ -132,35 +134,28 @@ function User({navigation}) {
     return text.length > limit ? text.substring(0, limit) + '...' : text;
   }
 
-  async function getAreaName(lat: number, long: number) {
-    try {
-      const response = await fetch(
-        'https://nominatim.openstreetmap.org/reverse?format=json&lat=' +
-          lat +
-          '&lon=' +
-          long,
-      );
-      console.log(response);
-      const {address} = response.data;
-      const area = address.locality || address.city;
-      setLocation(area);
-    } catch (error) {
-      console.log('Error while fetching area name:', error);
-    }
-  }
-
   async function updateToken() {
-    let token = await getToken();
-    if (token) {
-      await firestore()
-        .collection('tokens')
-        .doc('tokensData')
-        .update({
-          user: token,
-        })
-        .then(() => {
-          console.log('Token updated');
-        });
+    getToken();
+    const token = await AsyncStorage.getItem('token');
+    console.log(token);
+    const response = await fetch(
+      'https://deshmukh.pythonanywhere.com/update_token',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: 'user@gmail.com',
+          device_token: token,
+        }),
+      },
+    );
+    if (response.status === 200) {
+      console.log('Token updated');
+    } else {
+      console.log('Token not updated');
+      console.log(response);
     }
   }
 
@@ -188,7 +183,9 @@ function User({navigation}) {
 
   async function getRestaurants() {
     try {
-      const response = await fetch('http://deshmukh.pythonanywhere.com/hotels');
+      const response = await fetch(
+        'https://deshmukh.pythonanywhere.com/hotels',
+      );
       const data = await response.json();
       setRestaurants(data);
     } catch (error) {
@@ -196,8 +193,8 @@ function User({navigation}) {
     }
   }
 
-  function logout() {
-    ToastAndroid.show('Order Placed Successfully', ToastAndroid.SHORT);
+  async function logout() {
+    await AsyncStorage.removeItem('credentials');
     navigation.dispatch(StackActions.replace('Login'));
   }
 
@@ -221,12 +218,15 @@ function User({navigation}) {
       .catch(err => {
         console.log(err);
       });
-    //updateToken();
+    updateToken();
     getRestaurants();
   }, []);
 
   return (
-    <ScrollView>
+    <ScrollView
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={getRestaurants} />
+      }>
       <View style={styles.profileCard}>
         <Image
           source={avatar}
@@ -243,7 +243,9 @@ function User({navigation}) {
           </Text>
           <View style={{flexDirection: 'row', alignItems: 'center'}}>
             <Icon name="map-pin" size={20} color="red" style={{marginTop: 5}} />
-            <Text style={{marginLeft: 10}}>Hinjewadi, Pune</Text>
+            <Text style={{marginLeft: 10, color: 'black'}}>
+              Hinjewadi, Pune
+            </Text>
           </View>
         </View>
         <TouchableOpacity style={styles.logoutBtn} onPress={logout}>
@@ -266,7 +268,9 @@ function User({navigation}) {
             {dishes.map((dish, index) => (
               <View style={{margin: 10}} key={index}>
                 <Image source={dish.image} style={styles.dishImage} />
-                <Text style={{textAlign: 'center'}}>{dish.name}</Text>
+                <Text style={{textAlign: 'center', color: 'black'}}>
+                  {dish.name}
+                </Text>
               </View>
             ))}
           </View>
@@ -297,7 +301,7 @@ function User({navigation}) {
                   <Image
                     source={{
                       uri:
-                        'http://deshmukh.pythonanywhere.com/restaurant-images/' +
+                        'https://deshmukh.pythonanywhere.com/restaurant-images/' +
                         item[3],
                     }}
                     style={{width: 100, height: 100, borderRadius: 5}}
@@ -315,12 +319,12 @@ function User({navigation}) {
                   </Text>
                   <View style={{flexDirection: 'row', alignItems: 'center'}}>
                     <Icon name="map-pin" size={20} color="red" />
-                    <Text style={{marginLeft: 10}}>
+                    <Text style={{marginLeft: 10, color: 'black'}}>
                       {truncateText(item[2], 30)}
                     </Text>
                   </View>
                   <View style={{flexDirection: 'row', alignItems: 'center'}}>
-                    <Text>
+                    <Text style={{color: 'black'}}>
                       Distance:{' '}
                       {calculateDistance(lat, long, item[6], item[7], 'km')} Km
                     </Text>

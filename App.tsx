@@ -16,7 +16,7 @@ function App(): React.JSX.Element {
   return (
     <NavigationContainer>
       <Stack.Navigator>
-        {/* <Stack.Screen
+        <Stack.Screen
           name="Splash"
           component={SplashScreen}
           options={{headerShown: false}}
@@ -45,7 +45,7 @@ function App(): React.JSX.Element {
           name="Cart"
           component={Cart}
           options={{headerShown: false}}
-        /> */}
+        />
         <Stack.Screen
           name="Owner"
           component={Owner}
